@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { AppointmentService } from '../../../infrastructure/services/AppointmentService';
 import { UserService } from '../../../infrastructure/services/UserService';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import axios from 'axios';
+import { config } from '../../../infrastructure/config';
 import type { Appointment } from '../../../domain/entities/Appointment';
 import type { User } from '../../../domain/entities/User';
 
@@ -11,7 +17,9 @@ export const ProfessionalDashboard = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [linkedClients, setLinkedClients] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -52,12 +60,78 @@ export const ProfessionalDashboard = () => {
     fetchDashboardData();
   }, [user]);
 
-  if (isLoading) {
+  const fetchAppointments = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${config.apiUrl}/appointments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setTodayAppointments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch appointments:', error);
+      setError('Failed to load appointments. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getCalendarEvents = () => {
+    return todayAppointments.map(appointment => ({
+      id: String(appointment.id),
+      title: `${appointment.title} - ${appointment.client?.name || 'Unknown Client'}`,
+      start: `${appointment.date}T${appointment.startTime}`,
+      end: `${appointment.date}T${appointment.endTime}`,
+      backgroundColor: 
+        appointment.status === 'confirmed' ? '#10B981' : 
+        appointment.status === 'pending' ? '#F59E0B' : '#EF4444'
+    }));
+  };
+
+  const handleEventClick = (info: any) => {
+    const appointmentId = info.event.id;
+    navigate(`/professional/appointments/${appointmentId}`);
+  };
+
+  const handleDateSelect = (selectInfo: any) => {
+    const startTime = new Date(selectInfo.start);
+    const endTime = new Date(selectInfo.end);
+    navigate(
+      `/professional/schedule/availability?start=${startTime.toISOString()}&end=${endTime.toISOString()}`
+    );
+  };
+
+  const renderStats = () => {
+    const pendingCount = todayAppointments.filter(a => a.status === 'pending').length;
+    const confirmedCount = todayAppointments.filter(a => a.status === 'confirmed').length;
+    const today = new Date().toISOString().split('T')[0];
+    const todayAppointmentsCount = todayAppointments.filter(a => a.date === today && a.status === 'confirmed').length;
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading...</div>
+      <div className="grid grid-cols-1 gap-5 mt-5 sm:grid-cols-3">
+        <div className="p-5 bg-white rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-500">Today's Appointments</div>
+          <div className="mt-1 text-3xl font-semibold text-blue-500">{todayAppointmentsCount}</div>
+        </div>
+        <div className="p-5 bg-white rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-500">Pending Approval</div>
+          <div className="mt-1 text-3xl font-semibold text-yellow-500">{pendingCount}</div>
+        </div>
+        <div className="p-5 bg-white rounded-lg shadow">
+          <div className="text-sm font-medium text-gray-500">Total Confirmed</div>
+          <div className="mt-1 text-3xl font-semibold text-green-500">{confirmedCount}</div>
+        </div>
       </div>
     );
+  };
+
+  if (isLoading && todayAppointments.length === 0) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
   }
 
   return (
@@ -72,36 +146,30 @@ export const ProfessionalDashboard = () => {
         </Link>
       </div>
 
-      {/* Today's Appointments */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-          <h2 className="text-lg font-medium text-gray-900">Today's Appointments</h2>
-        </div>
-        <div className="px-4 py-5 sm:p-6">
-          {todayAppointments.length === 0 ? (
-            <p className="text-gray-500">No appointments scheduled for today</p>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {todayAppointments.map((appointment) => (
-                <li key={appointment.id} className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{appointment.title}</p>
-                      <p className="text-sm text-gray-500">
-                        with {appointment.client.name}
-                      </p>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(appointment.startTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      {error && (
+        <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-md">{error}</div>
+      )}
+
+      {renderStats()}
+
+      <div className="mt-8 bg-white rounded-lg shadow p-4">
+        <h2 className="text-lg font-semibold mb-4">Your Schedule</h2>
+        <div className="h-96">
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            }}
+            initialView="timeGridWeek"
+            selectable={true}
+            selectMirror={true}
+            dayMaxEvents={true}
+            events={getCalendarEvents()}
+            eventClick={handleEventClick}
+            select={handleDateSelect}
+          />
         </div>
       </div>
 

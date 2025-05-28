@@ -1,12 +1,7 @@
 import axios from 'axios';
-import { Appointment } from '../../domain/entities/Appointment';
-import type { AppointmentProps } from '../../domain/entities/Appointment';
-import type { IAppointmentService, CreateAppointmentData, UpdateAppointmentData } from '../../application/ports/IAppointmentService';
+import type { Appointment } from '../../domain/entities/Appointment';
 import { config } from '../config';
-
-interface AppointmentResponse extends AppointmentProps {
-  id: string;
-}
+import type { IAppointmentService, CreateAppointmentData, UpdateAppointmentData } from '../../application/ports/IAppointmentService';
 
 export class AppointmentService implements IAppointmentService {
   private readonly authToken: string | null;
@@ -23,10 +18,10 @@ export class AppointmentService implements IAppointmentService {
 
   async createAppointment(data: CreateAppointmentData): Promise<Appointment> {
     try {
-      const response = await axios.post<AppointmentResponse>(`${config.apiUrl}/appointments`, data, {
+      const response = await axios.post<Appointment>(`${config.apiUrl}/appointments`, data, {
         headers: this.headers
       });
-      return Appointment.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to create appointment');
@@ -35,12 +30,12 @@ export class AppointmentService implements IAppointmentService {
     }
   }
 
-  async updateAppointment(id: string, data: UpdateAppointmentData): Promise<Appointment> {
+  async updateAppointment(id: number, data: UpdateAppointmentData): Promise<Appointment> {
     try {
-      const response = await axios.put<AppointmentResponse>(`${config.apiUrl}/appointments/${id}`, data, {
+      const response = await axios.put<Appointment>(`${config.apiUrl}/appointments/${id}`, data, {
         headers: this.headers
       });
-      return Appointment.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to update appointment');
@@ -49,7 +44,7 @@ export class AppointmentService implements IAppointmentService {
     }
   }
 
-  async cancelAppointment(id: string): Promise<void> {
+  async cancelAppointment(id: number): Promise<void> {
     try {
       await axios.post(`${config.apiUrl}/appointments/${id}/cancel`, {}, {
         headers: this.headers
@@ -62,12 +57,12 @@ export class AppointmentService implements IAppointmentService {
     }
   }
 
-  async confirmAppointment(id: string): Promise<Appointment> {
+  async confirmAppointment(id: number): Promise<Appointment> {
     try {
-      const response = await axios.post<AppointmentResponse>(`${config.apiUrl}/appointments/${id}/confirm`, {}, {
+      const response = await axios.post<Appointment>(`${config.apiUrl}/appointments/${id}/confirm`, {}, {
         headers: this.headers
       });
-      return Appointment.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to confirm appointment');
@@ -76,12 +71,12 @@ export class AppointmentService implements IAppointmentService {
     }
   }
 
-  async getAppointment(id: string): Promise<Appointment> {
+  async getAppointment(id: number): Promise<Appointment> {
     try {
-      const response = await axios.get<AppointmentResponse>(`${config.apiUrl}/appointments/${id}`, {
+      const response = await axios.get<Appointment>(`${config.apiUrl}/appointments/${id}`, {
         headers: this.headers
       });
-      return Appointment.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get appointment');
@@ -94,17 +89,15 @@ export class AppointmentService implements IAppointmentService {
     startDate?: Date;
     endDate?: Date;
     status?: string;
-    professionalId?: string;
-    clientId?: string;
+    professionalId?: number;
+    clientId?: number;
   }): Promise<Appointment[]> {
     try {
-      const response = await axios.get<AppointmentResponse[]>(`${config.apiUrl}/appointments`, {
+      const response = await axios.get<Appointment[]>(`${config.apiUrl}/appointments`, {
         headers: this.headers,
         params: filters
       });
-      return response.data.map(appointmentData => 
-        Appointment.create(appointmentData, appointmentData.id)
-      );
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get appointments');

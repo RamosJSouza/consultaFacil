@@ -1,5 +1,5 @@
-import { User } from '../../domain/entities/User';
-import { UserRole } from '../../domain/entities/UserRole';
+import type { User } from '../../domain/entities/User';
+import type { UserRole } from '../../domain/entities/UserRole';
 
 export interface LoginCredentials {
   email: string;

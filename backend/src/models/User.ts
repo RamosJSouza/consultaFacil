@@ -18,6 +18,8 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare specialty: CreationOptional<string | null>;
   declare licenseNumber: CreationOptional<string | null>;
   declare isActive: CreationOptional<boolean>;
+  declare reset_token: CreationOptional<string | null>;
+  declare reset_token_expiry: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -64,6 +66,14 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+    reset_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_token_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

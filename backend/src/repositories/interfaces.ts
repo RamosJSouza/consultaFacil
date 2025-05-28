@@ -4,9 +4,13 @@ import Rule from '../models/Rule';
 import AuditLog from '../models/AuditLog';
 
 export interface IUserRepository {
-  findById(id: number): Promise<User | null>;  findByEmail(email: string): Promise<User | null>;
+  findById(id: number): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  findByResetToken(token: string): Promise<User | null>;
   create(data: Partial<User>): Promise<User>;
   update(id: number, data: Partial<User>): Promise<User>;
+  updateResetToken(id: number, token: string, expiry: Date): Promise<User>;
+  updatePassword(id: number, password: string): Promise<User>;
   delete(id: number): Promise<void>;
   findActiveProfessionals(): Promise<User[]>;
 }

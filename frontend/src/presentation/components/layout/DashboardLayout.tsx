@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../../domain/entities/UserRole';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -97,18 +98,25 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 bg-white shadow-sm lg:hidden">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-1 -ml-1 rounded-md lg:hidden"
-            aria-label="Open sidebar"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-semibold">ConsultaFácil</h1>
-          <div className="w-6"></div>
+        <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 bg-white shadow-sm">
+          <div className="flex items-center lg:hidden">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-1 -ml-1 rounded-md"
+              aria-label="Open sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="ml-4 text-xl font-semibold lg:hidden">ConsultaFácil</h1>
+          </div>
+          <div className="flex items-center ml-auto">
+            <NotificationBell />
+            <div className="ml-4">
+              <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+            </div>
+          </div>
         </div>
         <main className="p-4">{children}</main>
       </div>

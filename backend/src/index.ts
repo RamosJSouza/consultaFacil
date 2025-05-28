@@ -11,6 +11,7 @@ import authRoutes from './routes/auth';
 import appointmentRoutes from './routes/appointments';
 import userRoutes from './routes/users';
 import rulesRoutes from './routes/rules';
+import notificationRoutes from './routes/notifications';
 import { basicLimiter, authLimiter, apiLimiter } from './middleware/rateLimit';
 import { errorHandler } from './middleware/errorHandler';
 import { DatabaseError } from './utils/errors';
@@ -26,7 +27,10 @@ const app = express();
 const port = env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true
+}));
 app.use(helmet());
 app.use(compression());
 app.use(express.json());
@@ -43,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/rules', rulesRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Swagger configuration
 const swaggerOptions = {
@@ -61,16 +66,11 @@ const swaggerOptions = {
     ],
     components: {
       securitySchemes: {
-        basicAuth: {
-          type: 'http',
-          scheme: 'basic',
-          description: 'Basic authentication with email and password',
-        },
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'JWT token obtained from login',
+          description: 'JWT token obtido do endpoint /api/auth/login. Use o token retornado no campo "accessToken" da resposta.'
         }
       },
       schemas: {
@@ -100,6 +100,17 @@ const swaggerOptions = {
             status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled'] },
             clientId: { type: 'integer' },
             professionalId: { type: 'integer' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        Notification: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            userId: { type: 'integer' },
+            message: { type: 'string' },
+            isRead: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }

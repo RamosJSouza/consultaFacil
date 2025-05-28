@@ -1,18 +1,22 @@
 {
-  "name": "backend",
+  "name": "consultafacil-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Backend for ConsultaFácil appointment scheduling platform",
+  "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "dev": "ts-node src/index.ts",
+    "dev:watch": "nodemon --exec ts-node src/index.ts",
+    "migrate": "ts-node src/scripts/run-migrations.ts",
+    "seed:notifications": "ts-node src/scripts/seed-notifications.ts",
+    "test": "jest --detectOpenHandles",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/compression": "^1.8.0",
@@ -30,14 +34,15 @@
     "@types/swagger-ui-express": "^4.1.8",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "jest": "^29.7.0",
-    "jsonwebtoken": "^9.0.2",
-    "nodemon": "^3.1.10",
-    "pg": "^8.16.0",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jest": "^29.5.0",
+    "jsonwebtoken": "^9.0.0",
+    "knex": "^2.4.2",
+    "nodemon": "^2.0.22",
+    "pg": "^8.10.0",
     "sequelize": "^6.37.7",
-    "supertest": "^7.1.1",
+    "supertest": "^6.3.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "ts-jest": "^29.3.4",
@@ -51,6 +56,7 @@
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
+    "http-status-codes": "^2.3.0",
     "morgan": "^1.10.0",
     "node-cron": "^4.0.7",
     "nodemailer": "^7.0.3",
@@ -59,17 +65,9 @@
     "zod": "^3.25.31"
   },
   "jest": {
-    "preset": "ts-jest",
     "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.ts",
-      "**/?(*.)+(spec|test).ts"
-    ],
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest"
-    }
+    "setupFiles": [
+      "dotenv/config"
+    ]
   }
 }

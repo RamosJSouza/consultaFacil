@@ -1,26 +1,20 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { User } from '../../domain/entities/User';
-import { AuthenticationService } from '../../infrastructure/services/AuthenticationService';
-import type { LoginCredentials, RegisterData } from '../../application/ports/IAuthenticationService';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { config } from '../../infrastructure/config';
+import type { User } from '../../domain/entities/User';
+import { UserRole } from '../../domain/entities/UserRole';
 
 interface AuthContextType {
   user: User | null;
+  isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -29,45 +23,98 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const authService = new AuthenticationService();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Failed to get current user:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
+    // Verificar se há um token no localStorage
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      fetchCurrentUser(token);
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
-    const { user } = await authService.login(credentials);
-    setUser(user);
+  const fetchCurrentUser = async (token: string) => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      localStorage.removeItem('token');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const register = async (data: RegisterData) => {
-    const { user } = await authService.register(data);
-    setUser(user);
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await axios.post(`${config.apiUrl}/auth/login`, {
+        email,
+        password
+      });
+      
+      const { accessToken, user } = response.data;
+      
+      localStorage.setItem('token', accessToken);
+      setUser(user);
+      
+      // Redirecionar com base no tipo de usuário
+      switch (user.role) {
+        case UserRole.CLIENT:
+          navigate('/client/dashboard');
+          break;
+        case UserRole.PROFESSIONAL:
+          navigate('/professional/dashboard');
+          break;
+        case UserRole.ADMIN:
+        case 'superadmin':
+          navigate('/admin/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
+      
+      return user;
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
-  const logout = async () => {
-    await authService.logout();
+  const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
+    navigate('/login');
   };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
 }; 

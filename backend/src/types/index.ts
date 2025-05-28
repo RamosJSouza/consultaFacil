@@ -63,6 +63,15 @@ export interface IAuditLog {
   createdAt?: Date;
 }
 
+export interface INotification {
+  id?: number;
+  userId: number;
+  message: string;
+  isRead?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface AuthUser {
   id: number;
   role: UserRole;

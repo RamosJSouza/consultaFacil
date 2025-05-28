@@ -12,6 +12,10 @@ export class SequelizeUserRepository implements IUserRepository {
     return User.findOne({ where: { email } });
   }
 
+  async findByResetToken(token: string): Promise<User | null> {
+    return User.findOne({ where: { reset_token: token } });
+  }
+
   async findAll(): Promise<User[]> {
     return User.findAll({
       attributes: ['id', 'name', 'email', 'role', 'specialty', 'licenseNumber', 'isActive'],
@@ -28,6 +32,29 @@ export class SequelizeUserRepository implements IUserRepository {
       throw new NotFoundError('User');
     }
     return user.update(data);
+  }
+
+  async updateResetToken(id: number, token: string, expiry: Date): Promise<User> {
+    const user = await User.findByPk(id);
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    return user.update({
+      reset_token: token,
+      reset_token_expiry: expiry
+    });
+  }
+
+  async updatePassword(id: number, password: string): Promise<User> {
+    const user = await User.findByPk(id);
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    return user.update({
+      password,
+      reset_token: null,
+      reset_token_expiry: null
+    });
   }
 
   async delete(id: number): Promise<void> {

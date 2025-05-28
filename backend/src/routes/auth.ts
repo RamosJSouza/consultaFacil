@@ -60,13 +60,29 @@ router.post('/register', asyncHandler(authController.register));
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login user
+ *     summary: Autenticar usuário e obter token JWT
  *     tags: [Auth]
- *     security:
- *       - basicAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: "password123"
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login bem-sucedido
  *         content:
  *           application/json:
  *             schema:
@@ -76,10 +92,12 @@ router.post('/register', asyncHandler(authController.register));
  *                   $ref: '#/components/schemas/User'
  *                 accessToken:
  *                   type: string
+ *                   description: Token JWT para autenticação. Use este token no header Authorization como "Bearer [token]"
  *                 refreshToken:
  *                   type: string
+ *                   description: Token para obter um novo accessToken quando este expirar
  *       401:
- *         description: Invalid credentials
+ *         description: Credenciais inválidas
  *         content:
  *           application/json:
  *             schema:
@@ -91,19 +109,20 @@ router.post('/login', asyncHandler(authController.login));
  * @swagger
  * /api/auth/me:
  *   get:
- *     summary: Get current user info
+ *     summary: Obter informações do usuário atual
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
+ *     description: Retorna as informações do usuário autenticado. Requer token JWT válido.
  *     responses:
  *       200:
- *         description: Current user information
+ *         description: Informações do usuário atual
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       401:
- *         description: Not authenticated
+ *         description: Não autenticado
  *         content:
  *           application/json:
  *             schema:
@@ -137,5 +156,60 @@ router.get('/me', authenticate, asyncHandler(authController.getCurrentUser));
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/refresh', asyncHandler(authController.refreshToken));
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ *       404:
+ *         description: User not found
+ */
+router.post('/forgot-password', asyncHandler(authController.forgotPassword));
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post('/reset-password', asyncHandler(authController.resetPassword));
 
 export default router;

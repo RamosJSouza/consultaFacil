@@ -1,10 +1,18 @@
+import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './presentation/contexts/AuthContext';
+import { NotificationProvider } from './presentation/contexts/NotificationContext';
 import { AppRouter } from './presentation/routes';
 
-export const App = () => {
+function App() {
   return (
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <NotificationProvider>
+          <AppRouter />
+        </NotificationProvider>
+      </AuthProvider>
+    </Router>
   );
-};
+}
+
+export default App;

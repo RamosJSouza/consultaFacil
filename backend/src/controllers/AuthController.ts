@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { ValidationError, UnauthorizedError } from '../utils/errors';
+import { ValidationError, UnauthorizedError, NotFoundError } from '../utils/errors';
 import { AuthenticatedRequest, UserRole } from '../types';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export class AuthController {
   private userRepository: SequelizeUserRepository;
@@ -18,7 +19,12 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { email, password, name, role, specialty, licenseNumber } = req.body;
+      const { email, password, name, role: rawRole, specialty, licenseNumber } = req.body;
+      
+      // Converter role para minúsculas para compatibilidade
+      const role = typeof rawRole === 'string' ? rawRole.toLowerCase() : rawRole;
+
+      console.log(`Register attempt with email: ${email}, role: ${rawRole} (normalized to: ${role})`);
 
       // Validate required fields
       if (!email || !password || !name || !role) {
@@ -81,22 +87,34 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
+      console.log(`Login attempt for email: ${email}`);
+
       if (!email || !password) {
         throw new ValidationError('Email and password are required');
       }
 
+      // Verifica se JWT_SECRET está configurado
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET environment variable is not set');
+        throw new Error('Authentication configuration error');
+      }
+
       const user = await this.userRepository.findByEmail(email);
       if (!user || !user.isActive) {
+        console.log(`Login failed: User not found or inactive for email ${email}`);
         throw new UnauthorizedError('Invalid credentials');
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
+        console.log(`Login failed: Invalid password for email ${email}`);
         throw new UnauthorizedError('Invalid credentials');
       }
 
       const accessToken = this.generateAccessToken(user);
       const refreshToken = this.generateRefreshToken(user);
+
+      console.log(`Login successful for user ${user.id} (${user.email})`);
 
       res.json({
         user: {
@@ -183,6 +201,81 @@ export class AuthController {
       } else {
         next(error);
       }
+    }
+  };
+
+  forgotPassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        throw new ValidationError('Email is required');
+      }
+
+      // Verificar se o usuário existe
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Gerar token de recuperação (expira em 1 hora)
+      const resetToken = crypto.randomBytes(20).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
+
+      // Salvar token no banco
+      await this.userRepository.updateResetToken(user.id, resetToken, resetTokenExpiry);
+
+      // Enviar email com link de recuperação
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+      
+      // Aqui implementaríamos o envio de email com o link
+      // Em produção, utilize um serviço como Nodemailer
+      console.log(`Link de recuperação: ${resetUrl}`);
+
+      res.status(200).json({ 
+        message: 'Email de recuperação enviado com sucesso',
+        // Em desenvolvimento, retornamos o token para testes
+        resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  resetPassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        throw new ValidationError('Token and new password are required');
+      }
+
+      // Verificar se o token é válido e não expirou
+      const user = await this.userRepository.findByResetToken(token);
+      
+      if (!user || !user.reset_token_expiry || user.reset_token_expiry < new Date()) {
+        throw new ValidationError('Invalid or expired token');
+      }
+
+      // Hash da nova senha
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      // Atualizar senha e limpar token
+      await this.userRepository.updatePassword(user.id, hashedPassword);
+
+      res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+      next(error);
     }
   };
 

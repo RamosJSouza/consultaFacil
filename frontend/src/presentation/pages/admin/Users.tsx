@@ -1,233 +1,284 @@
 import { useState, useEffect } from 'react';
-import { UserService } from '../../../infrastructure/services/UserService';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { config } from '../../../infrastructure/config';
+import { useNotifications } from '../../contexts/NotificationContext';
 import type { User } from '../../../domain/entities/User';
 import { UserRole } from '../../../domain/entities/UserRole';
-import { UserEditModal } from '../../components/users/UserEditModal';
-
-interface UserFilters {
-  role?: UserRole;
-  searchTerm: string;
-}
 
 export const AdminUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [filters, setFilters] = useState<UserFilters>({
-    searchTerm: '',
-  });
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const userService = new UserService();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const { showToast } = useNotifications();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const fetchedUsers = await userService.getUsers();
-        setUsers(fetchedUsers);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-        setError('Failed to load users');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to deactivate this user?')) {
-      return;
-    }
+  useEffect(() => {
+    filterUsers();
+  }, [searchTerm, roleFilter, users]);
 
+  const fetchUsers = async () => {
     try {
-      await userService.deactivateUser(userId);
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, isActive: false }
-          : user
-      ));
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${config.apiUrl}/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUsers(response.data);
+      setFilteredUsers(response.data);
     } catch (error) {
-      console.error('Failed to deactivate user:', error);
-      setError('Failed to deactivate user');
+      console.error('Failed to fetch users:', error);
+      setError('Failed to load users. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSaveUser = (savedUser: User) => {
-    if (selectedUser) {
-      // Update existing user
-      setUsers(users.map(user => user.id === savedUser.id ? savedUser : user));
-    } else {
-      // Add new user
-      setUsers([...users, savedUser]);
-    }
-  };
-
-  const filteredUsers = users.filter(user => {
-    const matchesRole = !filters.role || user.role === filters.role;
-    const matchesSearch = 
-      user.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(filters.searchTerm.toLowerCase());
+  const filterUsers = () => {
+    let result = [...users];
     
-    return matchesRole && matchesSearch;
-  });
+    // Filter by role
+    if (roleFilter !== 'all') {
+      result = result.filter(user => user.role === roleFilter);
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(user => 
+        user.name.toLowerCase().includes(term) || 
+        user.email.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredUsers(result);
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading...</div>
-      </div>
+  const handleStatusChange = async (userId: string, isActive: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      await axios.patch(
+        `${config.apiUrl}/users/${userId}/status`,
+        { isActive },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update user in local state
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId ? { ...user, isActive } : user
+        ) as User[]
+      );
+
+      showToast(
+        'User updated',
+        `User status has been ${isActive ? 'activated' : 'deactivated'} successfully.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Failed to update user status:', error);
+      showToast(
+        'Update failed',
+        'Failed to update user status. Please try again.',
+        'error'
+      );
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this user? This action cannot be undone.'
     );
+    
+    if (!confirmDelete) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      await axios.delete(`${config.apiUrl}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Remove user from local state
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
+      
+      showToast(
+        'User deleted',
+        'User has been deleted successfully.',
+        'success'
+      );
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      showToast(
+        'Delete failed',
+        'Failed to delete user. Please try again.',
+        'error'
+      );
+    }
+  };
+
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'bg-purple-100 text-purple-800';
+      case UserRole.PROFESSIONAL:
+        return 'bg-blue-100 text-blue-800';
+      case UserRole.CLIENT:
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading && users.length === 0) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Users Management</h1>
-        <button
-          onClick={() => {
-            setSelectedUser(null);
-            setIsEditModalOpen(true);
-          }}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+        <button 
+          onClick={() => navigate('/admin/users/new')} 
+          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
         >
           Add New User
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-                Search
-              </label>
-              <input
-                type="text"
-                name="search"
-                id="search"
-                value={filters.searchTerm}
-                onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
-                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
-                placeholder="Search by name or email"
-              />
-            </div>
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={filters.role || ''}
-                onChange={(e) => setFilters({ ...filters, role: (e.target.value || undefined) as UserRole })}
-                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
-              >
-                <option value="">All Roles</option>
-                <option value={UserRole.CLIENT}>Client</option>
-                <option value={UserRole.PROFESSIONAL}>Professional</option>
-                <option value={UserRole.SUPERADMIN}>Admin</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="flex flex-col">
-        <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden border-b border-gray-200 shadow sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Email
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Role
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th scope="col" className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 text-xs font-semibold leading-5 rounded-full
-                            ${
-                              user.role === UserRole.PROFESSIONAL
-                                ? 'bg-blue-100 text-blue-800'
-                                : user.role === UserRole.CLIENT
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }
-                          `}
-                        >
-                          {user.role.toLowerCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
-                          Active
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsEditModalOpen(true);
-                          }}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="ml-4 text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {error && (
-        <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">
-          {error}
-        </div>
+        <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-md">{error}</div>
       )}
 
-      <UserEditModal
-        user={selectedUser}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleSaveUser}
-      />
+      <div className="mb-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="w-full p-2 pl-10 border border-gray-300 rounded-md"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <div className="sm:w-48">
+          <select
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
+            <option value="all">All Roles</option>
+            <option value="ADMIN">Admin</option>
+            <option value={UserRole.PROFESSIONAL}>Professional</option>
+            <option value={UserRole.CLIENT}>Client</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeClass(user.role)}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => navigate(`/admin/users/${user.id}`)}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(user.id, !user.isActive)}
+                        className={`${user.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'} mr-4`}
+                      >
+                        {user.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }; 

@@ -1,13 +1,8 @@
 import axios from 'axios';
-import { User } from '../../domain/entities/User';
-import type { UserProps } from '../../domain/entities/User';
-import type { IUserService } from '../../application/ports/IUserService';
+import type { User } from '../../domain/entities/User';
 import type { UserRole } from '../../domain/entities/UserRole';
+import type { IUserService } from '../../application/ports/IUserService';
 import { config } from '../config';
-
-interface UserResponse extends UserProps {
-  id: string;
-}
 
 export class UserService implements IUserService {
   private readonly authToken: string | null;
@@ -27,11 +22,11 @@ export class UserService implements IUserService {
     isActive?: boolean;
   }): Promise<User[]> {
     try {
-      const response = await axios.get<UserResponse[]>(`${config.apiUrl}/users`, {
+      const response = await axios.get<User[]>(`${config.apiUrl}/users`, {
         headers: this.headers,
         params: filters
       });
-      return response.data.map(userData => User.create(userData, userData.id));
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get users');
@@ -40,12 +35,12 @@ export class UserService implements IUserService {
     }
   }
 
-  async getUser(id: string): Promise<User> {
+  async getUser(id: number): Promise<User> {
     try {
-      const response = await axios.get<UserResponse>(`${config.apiUrl}/users/${id}`, {
+      const response = await axios.get<User>(`${config.apiUrl}/users/${id}`, {
         headers: this.headers
       });
-      return User.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get user');
@@ -54,17 +49,17 @@ export class UserService implements IUserService {
     }
   }
 
-  async updateUser(id: string, data: {
+  async updateUser(id: number, data: {
     name?: string;
     specialty?: string;
     licenseNumber?: string;
     isActive?: boolean;
   }): Promise<User> {
     try {
-      const response = await axios.put<UserResponse>(`${config.apiUrl}/users/${id}`, data, {
+      const response = await axios.put<User>(`${config.apiUrl}/users/${id}`, data, {
         headers: this.headers
       });
-      return User.create(response.data, response.data.id);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to update user');
@@ -73,7 +68,7 @@ export class UserService implements IUserService {
     }
   }
 
-  async deactivateUser(id: string): Promise<void> {
+  async deactivateUser(id: number): Promise<void> {
     try {
       await axios.post(`${config.apiUrl}/users/${id}/deactivate`, {}, {
         headers: this.headers
@@ -86,7 +81,7 @@ export class UserService implements IUserService {
     }
   }
 
-  async activateUser(id: string): Promise<void> {
+  async activateUser(id: number): Promise<void> {
     try {
       await axios.post(`${config.apiUrl}/users/${id}/activate`, {}, {
         headers: this.headers
@@ -99,7 +94,7 @@ export class UserService implements IUserService {
     }
   }
 
-  async linkProfessional(clientId: string, professionalId: string): Promise<void> {
+  async linkProfessional(clientId: number, professionalId: number): Promise<void> {
     try {
       await axios.post(`${config.apiUrl}/users/${clientId}/link-professional/${professionalId}`, {}, {
         headers: this.headers
@@ -112,7 +107,7 @@ export class UserService implements IUserService {
     }
   }
 
-  async unlinkProfessional(clientId: string, professionalId: string): Promise<void> {
+  async unlinkProfessional(clientId: number, professionalId: number): Promise<void> {
     try {
       await axios.post(`${config.apiUrl}/users/${clientId}/unlink-professional/${professionalId}`, {}, {
         headers: this.headers
@@ -125,12 +120,12 @@ export class UserService implements IUserService {
     }
   }
 
-  async getLinkedProfessionals(clientId: string): Promise<User[]> {
+  async getLinkedProfessionals(clientId: number): Promise<User[]> {
     try {
-      const response = await axios.get<UserResponse[]>(`${config.apiUrl}/users/${clientId}/linked-professionals`, {
+      const response = await axios.get<User[]>(`${config.apiUrl}/users/${clientId}/linked-professionals`, {
         headers: this.headers
       });
-      return response.data.map(userData => User.create(userData, userData.id));
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get linked professionals');
@@ -139,12 +134,12 @@ export class UserService implements IUserService {
     }
   }
 
-  async getLinkedClients(professionalId: string): Promise<User[]> {
+  async getLinkedClients(professionalId: number): Promise<User[]> {
     try {
-      const response = await axios.get<UserResponse[]>(`${config.apiUrl}/users/${professionalId}/linked-clients`, {
+      const response = await axios.get<User[]>(`${config.apiUrl}/users/${professionalId}/linked-clients`, {
         headers: this.headers
       });
-      return response.data.map(userData => User.create(userData, userData.id));
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Failed to get linked clients');

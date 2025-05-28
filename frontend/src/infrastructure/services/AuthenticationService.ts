@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User } from '../../domain/entities/User';
+import type { User } from '../../domain/entities/User';
 import type { IAuthenticationService, LoginCredentials, RegisterData } from '../../application/ports/IAuthenticationService';
 import { config } from '../config';
 
@@ -11,23 +11,22 @@ export class AuthenticationService implements IAuthenticationService {
     this.token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      const userData = JSON.parse(userStr);
-      this.currentUser = User.create(userData, userData.id);
+      this.currentUser = JSON.parse(userStr);
     }
   }
 
   async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
     try {
       const response = await axios.post(`${config.apiUrl}/auth/login`, credentials);
-      const { user: userData, token } = response.data;
+      const { user, token } = response.data;
 
       this.token = token;
-      this.currentUser = User.create(userData, userData.id);
+      this.currentUser = user;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(user));
 
-      return { user: this.currentUser, token };
+      return { user, token };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Login failed');
@@ -39,15 +38,15 @@ export class AuthenticationService implements IAuthenticationService {
   async register(data: RegisterData): Promise<{ user: User; token: string }> {
     try {
       const response = await axios.post(`${config.apiUrl}/auth/register`, data);
-      const { user: userData, token } = response.data;
+      const { user, token } = response.data;
 
       this.token = token;
-      this.currentUser = User.create(userData, userData.id);
+      this.currentUser = user;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(user));
 
-      return { user: this.currentUser, token };
+      return { user, token };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Registration failed');
@@ -76,8 +75,7 @@ export class AuthenticationService implements IAuthenticationService {
       const response = await axios.get(`${config.apiUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${this.token}` }
       });
-      const userData = response.data;
-      this.currentUser = User.create(userData, userData.id);
+      this.currentUser = response.data;
       return this.currentUser;
     } catch {
       await this.logout();

@@ -1,12 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthService } from '../services/AuthService';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { UserRole, AuthenticatedRequest } from '../types';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
-import Container from '../config/container';
 
-const authService = new AuthService();
 const userRepository = new SequelizeUserRepository();
 
 export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -18,37 +15,34 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
 
     const [type, token] = authHeader.split(' ');
     
-    if (type.toLowerCase() === 'basic') {
-      // Handle basic auth for login
-      const credentials = Buffer.from(token, 'base64').toString('utf-8');
-      const [email, password] = credentials.split(':');
-      
-      if (!email || !password) {
-        throw new UnauthorizedError('Invalid basic auth credentials');
-      }
-
-      req.body = { email, password };
-      return next();
-    }
-
     if (type.toLowerCase() !== 'bearer') {
       throw new UnauthorizedError('Invalid authorization type');
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: number;
-      email: string;
-      role: UserRole;
-    };
+    try {
+      // Verificar se JWT_SECRET está configurado
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET environment variable is not set');
+        throw new Error('Authentication configuration error');
+      }
 
-    req.user = decoded;
-    next();
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new UnauthorizedError('Invalid token'));
-    } else {
-      next(error);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
+        id: number;
+        email: string;
+        role: UserRole;
+      };
+
+      req.user = decoded;
+      next();
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        next(new UnauthorizedError('Invalid token'));
+      } else {
+        next(error);
+      }
     }
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -110,3 +104,5 @@ export const isResourceOwner = (resourceUserId: number) => {
     }
   };
 };
+
+

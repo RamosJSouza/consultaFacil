@@ -4,16 +4,23 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { EventInput, DateSelectArg, EventClickArg } from '@fullcalendar/core';
-import { Appointment, AppointmentStatus } from '../../../domain/entities/Appointment';
+import type { Appointment } from '../../../domain/entities/Appointment';
 import { AppointmentService } from '../../../infrastructure/services/AppointmentService';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../../domain/entities/UserRole';
 
+// Define appointment status constants
+const AppointmentStatus = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled'
+} as const;
+
 interface AppointmentCalendarProps {
   onSelectSlot?: (start: Date, end: Date) => void;
   onSelectEvent?: (appointment: Appointment) => void;
-  professionalId?: string;
-  clientId?: string;
+  professionalId?: number;
+  clientId?: number;
 }
 
 export const AppointmentCalendar = ({
@@ -46,13 +53,13 @@ export const AppointmentCalendar = ({
     fetchAppointments();
   }, [professionalId, clientId]);
 
-  const getEventColor = (status: AppointmentStatus) => {
+  const getEventColor = (status: string) => {
     switch (status) {
-      case AppointmentStatus.CONFIRMED:
+      case 'confirmed':
         return '#10B981'; // green
-      case AppointmentStatus.PENDING:
+      case 'pending':
         return '#F59E0B'; // yellow
-      case AppointmentStatus.CANCELLED:
+      case 'cancelled':
         return '#EF4444'; // red
       default:
         return '#6B7280'; // gray
@@ -60,10 +67,10 @@ export const AppointmentCalendar = ({
   };
 
   const events: EventInput[] = appointments.map(appointment => ({
-    id: appointment.id,
+    id: String(appointment.id),
     title: appointment.title,
-    start: appointment.startTime,
-    end: appointment.endTime,
+    start: `${appointment.date}T${appointment.startTime}`,
+    end: `${appointment.date}T${appointment.endTime}`,
     backgroundColor: getEventColor(appointment.status),
     borderColor: getEventColor(appointment.status),
     extendedProps: { appointment },
