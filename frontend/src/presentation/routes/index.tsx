@@ -5,15 +5,17 @@ import { AuthGuard } from '../components/auth/AuthGuard';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { UserRole } from '../../domain/entities/UserRole';
 
-// Placeholder components until we create the actual pages
-const ClientDashboard = () => <div>Client Dashboard</div>;
-const ClientAppointments = () => <div>Client Appointments</div>;
-const ClientProfessionals = () => <div>Client Professionals</div>;
+// Client pages
+import { ClientDashboard } from '../pages/client/Dashboard';
+import { ClientAppointments } from '../pages/client/Appointments';
+import { Professionals } from '../pages/client/Professionals';
 
-const ProfessionalDashboard = () => <div>Professional Dashboard</div>;
-const ProfessionalSchedule = () => <div>Professional Schedule</div>;
-const ProfessionalClients = () => <div>Professional Clients</div>;
+// Professional pages
+import { ProfessionalDashboard } from '../pages/professional/Dashboard';
+import { ProfessionalSchedule } from '../pages/professional/Schedule';
+import { ProfessionalClients } from '../pages/professional/Clients';
 
+// Placeholder components for admin
 const AdminDashboard = () => <div>Admin Dashboard</div>;
 const AdminUsers = () => <div>Admin Users</div>;
 const AdminReports = () => <div>Admin Reports</div>;
@@ -52,7 +54,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'professionals',
-        element: <ClientProfessionals />,
+        element: <Professionals />,
       },
     ],
   },
