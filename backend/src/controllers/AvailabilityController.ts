@@ -3,6 +3,24 @@ import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors'
 import { AuthenticatedRequest, UserRole } from '../types';
 import { SequelizeAvailabilityRepository } from '../repositories/AvailabilityRepository';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
+import { Op } from 'sequelize';
+import User from '../models/User';
+import Availability from '../models/Availability';
+
+// Define interface for professional with availabilities
+interface ProfessionalWithAvailabilities extends User {
+  availabilities?: {
+    id: number;
+    professionalId: number;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
+    isRecurring: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+}
 
 export class AvailabilityController {
   private availabilityRepository: SequelizeAvailabilityRepository;
@@ -44,6 +62,111 @@ export class AvailabilityController {
 
       const availabilities = await this.availabilityRepository.findByProfessionalId(professionalId);
       res.json(availabilities);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Get professionals with availability in a specific time frame
+  getProfessionalsWithAvailability = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const timeFrame = req.query.timeFrame as string || 'week';
+      const specialty = req.query.specialty as string;
+      
+      // Get current date information
+      const currentDate = new Date();
+      const currentDayOfWeek = currentDate.getDay();
+      
+      // Create date objects for the end of week and month
+      const endOfWeek = new Date(currentDate);
+      endOfWeek.setDate(currentDate.getDate() + (6 - currentDayOfWeek));
+      
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      // Base query conditions for professionals
+      const baseConditions: any = {
+        role: UserRole.PROFESSIONAL,
+        isActive: true
+      };
+      
+      // Add specialty filter if provided
+      if (specialty) {
+        baseConditions.specialty = specialty;
+      }
+      
+      let professionals;
+      
+      // Different queries based on timeframe
+      if (timeFrame === 'day') {
+        professionals = await User.findAll({
+          where: baseConditions,
+          include: [
+            {
+              model: Availability,
+              as: 'availabilities',
+              where: {
+                dayOfWeek: currentDayOfWeek,
+                isAvailable: true
+              },
+              required: true
+            }
+          ],
+          attributes: { exclude: ['password'] }
+        });
+      } else if (timeFrame === 'week') {
+        // Get professionals with availability in the current week
+        professionals = await User.findAll({
+          where: baseConditions,
+          include: [
+            {
+              model: Availability,
+              as: 'availabilities',
+              where: {
+                isAvailable: true
+              },
+              required: true
+            }
+          ],
+          attributes: { exclude: ['password'] }
+        });
+      } else {
+        // Default to month view
+        professionals = await User.findAll({
+          where: baseConditions,
+          include: [
+            {
+              model: Availability,
+              as: 'availabilities',
+              where: {
+                isAvailable: true
+              },
+              required: true
+            }
+          ],
+          attributes: { exclude: ['password'] }
+        });
+      }
+      
+      // Transform the result to include availability information
+      const result = professionals.map((professional: ProfessionalWithAvailabilities) => {
+        const prof = professional.toJSON() as ProfessionalWithAvailabilities;
+        const availabilities = prof.availabilities || [];
+        
+        return {
+          ...prof,
+          hasAvailability: {
+            day: timeFrame === 'day' ? true : availabilities.some((a) => a.dayOfWeek === currentDayOfWeek),
+            week: true, // If they're in the result, they have availability in the week
+            month: true // If they're in the result, they have availability in the month
+          }
+        };
+      });
+      
+      res.json(result);
     } catch (error) {
       next(error);
     }

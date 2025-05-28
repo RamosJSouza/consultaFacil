@@ -4,6 +4,9 @@ import {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
+  HasManyGetAssociationsMixin,
+  Association,
+  NonAttribute,
 } from 'sequelize';
 import { sequelize } from '../config/database';
 import { UserRole } from '../types';
@@ -22,6 +25,14 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare reset_token_expiry: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+  
+  // Associações
+  declare availabilities?: NonAttribute<any[]>;
+  declare getAvailabilities: HasManyGetAssociationsMixin<any>; // Referência à associação com Availability
+  
+  declare static associations: {
+    availabilities: Association<User, any>; // Associação com Availability
+  };
 }
 
 User.init(

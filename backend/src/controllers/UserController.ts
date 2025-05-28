@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors';
 import { AuthenticatedRequest, UserRole } from '../types';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
+import logger from '../utils/logger';
 
 export class UserController {
   private userRepository: SequelizeUserRepository;
@@ -29,9 +30,12 @@ export class UserController {
     next: NextFunction
   ): Promise<void> => {
     try {
+      logger.info('Buscando profissionais ativos');
       const professionals = await this.userRepository.findActiveProfessionals();
+      logger.info(`Encontrados ${professionals.length} profissionais ativos`);
       res.json(professionals);
     } catch (error) {
+      logger.error('Erro ao buscar profissionais ativos:', error);
       next(error);
     }
   };

@@ -51,6 +51,36 @@ router.get(
 
 /**
  * @swagger
+ * /api/availability/professionals/available:
+ *   get:
+ *     summary: Get professionals with availability in a specific time frame
+ *     tags: [Availability]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeFrame
+ *         schema:
+ *           type: string
+ *           enum: [day, week, month]
+ *         description: Time frame to check availability (day, week, month)
+ *       - in: query
+ *         name: specialty
+ *         schema:
+ *           type: string
+ *         description: Filter by professional specialty
+ *     responses:
+ *       200:
+ *         description: List of professionals with availability in the specified time frame
+ */
+router.get(
+  '/professionals/available',
+  authenticate,
+  availabilityController.getProfessionalsWithAvailability
+);
+
+/**
+ * @swagger
  * /api/availability/professional/{professionalId}/day/{dayOfWeek}:
  *   get:
  *     summary: Get available time slots for a specific professional and day

@@ -88,14 +88,7 @@ Availability.init(
     sequelize,
     tableName: 'availabilities',
     modelName: 'Availability',
-    underscored: true,
   }
 );
-
-// Define associations
-Availability.belongsTo(User, {
-  foreignKey: 'professionalId',
-  as: 'professional',
-});
 
 export default Availability; 

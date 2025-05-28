@@ -15,6 +15,7 @@ import userRoutes from './routes/users';
 import rulesRoutes from './routes/rules';
 import notificationRoutes from './routes/notifications';
 import availabilityRoutes from './routes/availability';
+import linkRoutes from './routes/links';
 import { basicLimiter, authLimiter, apiLimiter } from './middleware/rateLimit';
 import { errorHandler } from './middleware/errorHandler';
 import { DatabaseError } from './utils/errors';
@@ -23,6 +24,9 @@ import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { notFoundHandler } from './middleware/notFound';
 import { rateLimit } from 'express-rate-limit';
+
+// Importar modelos com associações configuradas
+import './models';
 
 const app = express();
 const port = env.PORT || 3000;
@@ -50,6 +54,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/rules', rulesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/availability', availabilityRoutes);
+app.use('/api/links', linkRoutes);
 
 // Swagger configuration
 const swaggerOptions = {
@@ -115,6 +120,7 @@ const swaggerOptions = {
             startTime: { type: 'string', format: 'time' },
             endTime: { type: 'string', format: 'time' },
             isAvailable: { type: 'boolean' },
+            isRecurring: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }
@@ -168,8 +174,13 @@ const startServer = async () => {
     logger.info('Database connection established successfully.');
     
     if (env.NODE_ENV !== 'production') {
-      await sequelize.sync({ alter: true });
-      logger.info('Database models synchronized.');
+      try {
+        await sequelize.sync({ alter: true });
+        logger.info('Database models synchronized.');
+      } catch (syncError) {
+        logger.error('Error synchronizing models:', syncError);
+        // Continue running the server even if sync fails
+      }
     }
 
     app.listen(port, () => {

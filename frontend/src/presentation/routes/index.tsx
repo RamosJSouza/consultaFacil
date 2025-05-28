@@ -6,6 +6,7 @@ import { ResetPassword } from '../pages/auth/ResetPassword';
 import { ClientDashboard } from '../pages/client/Dashboard';
 import { ClientAppointments } from '../pages/client/Appointments';
 import { NewAppointment } from '../pages/client/NewAppointment';
+import { Professionals } from '../pages/client/Professionals';
 import { ProfessionalDashboard } from '../pages/professional/Dashboard';
 import { ProfessionalSchedule } from '../pages/professional/Schedule';
 import { ProfessionalAvailability } from '../pages/professional/Availability';
@@ -15,6 +16,7 @@ import { Layout } from '../components/Layout';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { UserRole } from '../../domain/entities/UserRole';
 import { UserProfile } from '../pages/profile/UserProfile';
+import { HomeRedirect } from '../components/auth/HomeRedirect';
 
 export const AppRouter = () => {
   return (
@@ -24,7 +26,7 @@ export const AppRouter = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<HomeRedirect />} />
       
       {/* Protected client routes */}
       <Route
@@ -37,6 +39,7 @@ export const AppRouter = () => {
                 <Route path="appointments" element={<ClientAppointments />} />
                 <Route path="appointments/new" element={<NewAppointment />} />
                 <Route path="appointments/new/:professionalId" element={<NewAppointment />} />
+                <Route path="professionals" element={<Professionals />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
               </Routes>

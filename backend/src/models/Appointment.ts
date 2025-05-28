@@ -41,6 +41,7 @@ Appointment.init(
         model: 'users',
         key: 'id',
       },
+      field: 'client_id',
     },
     professionalId: {
       type: DataTypes.INTEGER,
@@ -49,6 +50,7 @@ Appointment.init(
         model: 'users',
         key: 'id',
       },
+      field: 'professional_id',
     },
     title: {
       type: DataTypes.STRING,
@@ -65,10 +67,12 @@ Appointment.init(
     startTime: {
       type: DataTypes.TIME,
       allowNull: false,
+      field: 'start_time',
     },
     endTime: {
       type: DataTypes.TIME,
       allowNull: false,
+      field: 'end_time',
     },
     status: {
       type: DataTypes.ENUM(...Object.values(AppointmentStatus)),
@@ -79,11 +83,13 @@ Appointment.init(
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
+      field: 'created_at',
     },
     updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
+      field: 'updated_at',
     },
   },
   {
@@ -92,16 +98,5 @@ Appointment.init(
     modelName: 'Appointment',
   }
 );
-
-// Define associations
-Appointment.belongsTo(User, {
-  foreignKey: 'clientId',
-  as: 'client',
-});
-
-Appointment.belongsTo(User, {
-  foreignKey: 'professionalId',
-  as: 'professional',
-});
 
 export default Appointment;

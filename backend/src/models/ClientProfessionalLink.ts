@@ -1,5 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
-import sequelize from '../config/database';
+import { sequelize } from '../config/database';
 import { IClientProfessionalLink } from '../types';
 import User from './User';
 
@@ -8,6 +8,7 @@ class ClientProfessionalLink extends Model<IClientProfessionalLink> implements I
   public clientId!: number;
   public professionalId!: number;
   public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 ClientProfessionalLink.init(
@@ -24,6 +25,7 @@ ClientProfessionalLink.init(
         model: 'users',
         key: 'id',
       },
+      field: 'client_id',
     },
     professionalId: {
       type: DataTypes.INTEGER,
@@ -32,6 +34,19 @@ ClientProfessionalLink.init(
         model: 'users',
         key: 'id',
       },
+      field: 'professional_id',
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'created_at',
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'updated_at',
     },
   },
   {
@@ -46,8 +61,5 @@ ClientProfessionalLink.init(
     ],
   }
 );
-
-ClientProfessionalLink.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
-ClientProfessionalLink.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });
 
 export default ClientProfessionalLink;

@@ -43,14 +43,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const paths = location.pathname.split('/').filter(Boolean);
     const navLinks = getNavLinks();
     
+    // Se estamos na página de dashboard, não precisa mostrar breadcrumbs
+    if (paths.length === 2 && paths[1] === 'dashboard') {
+      return [];
+    }
+    
     // Handle profile page specially
     if (paths.includes('profile')) {
       return [
-        { 
-          name: 'Dashboard', 
-          href: `/${paths[0]}/dashboard`,
-          isCurrent: false
-        },
         { 
           name: 'Meu Perfil', 
           href: location.pathname,
@@ -59,32 +59,38 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       ];
     }
     
-    // Build breadcrumbs based on current path
-    return paths.map((path, index) => {
-      // First segment is role (client, professional, admin)
-      if (index === 0) {
+    // Handle availability page specially
+    if (paths.includes('availability')) {
+      return [
+        { 
+          name: 'Agenda', 
+          href: `/${paths[0]}/schedule`,
+          isCurrent: false
+        },
+        { 
+          name: 'Disponibilidade', 
+          href: location.pathname,
+          isCurrent: true
+        }
+      ];
+    }
+    
+    // Build breadcrumbs based on current path, but skip the first segment (role)
+    if (paths.length > 1) {
+      return paths.slice(1).map((path, index) => {
+        // Find matching nav link for current path segment
+        const fullPath = `/${paths[0]}/${path}`;
+        const matchingLink = navLinks.find(link => link.href === fullPath);
+        
         return {
-          name: path === 'client' 
-            ? 'Cliente' 
-            : path === 'professional' 
-              ? 'Profissional' 
-              : 'Admin',
-          href: `/${path}`,
-          isCurrent: paths.length === 1
+          name: matchingLink?.name || path.charAt(0).toUpperCase() + path.slice(1),
+          href: `/${paths.slice(0, index + 2).join('/')}`,
+          isCurrent: index === paths.length - 2
         };
-      }
-      
-      // Find matching nav link for current path segment
-      const matchingLink = navLinks.find(link => 
-        link.href === `/${paths[0]}/${path}`
-      );
-      
-      return {
-        name: matchingLink?.name || path.charAt(0).toUpperCase() + path.slice(1),
-        href: `/${paths.slice(0, index + 1).join('/')}`,
-        isCurrent: index === paths.length - 1
-      };
-    });
+      });
+    }
+    
+    return [];
   }, [location.pathname]);
 
   const isActivePath = (path: string) => {

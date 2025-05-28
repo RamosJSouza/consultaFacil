@@ -56,6 +56,7 @@ export interface IClientProfessionalLink {
   clientId: number;
   professionalId: number;
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IRule {
