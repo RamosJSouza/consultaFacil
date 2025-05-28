@@ -291,3 +291,8 @@
 {"level":"info","message":"Server is running on port 3000","timestamp":"2025-05-28T15:08:56.485Z"}
 {"level":"info","message":"Environment: development","timestamp":"2025-05-28T15:08:56.486Z"}
 {"level":"info","message":"API Documentation: http://localhost:3000/api-docs","timestamp":"2025-05-28T15:08:56.487Z"}
+{"level":"info","message":"Database connection established successfully.","timestamp":"2025-05-28T15:46:54.617Z"}
+{"level":"info","message":"Database models synchronized.","timestamp":"2025-05-28T15:46:54.941Z"}
+{"level":"info","message":"Server is running on port 3000","timestamp":"2025-05-28T15:46:54.946Z"}
+{"level":"info","message":"Environment: development","timestamp":"2025-05-28T15:46:54.948Z"}
+{"level":"info","message":"API Documentation: http://localhost:3000/api-docs","timestamp":"2025-05-28T15:46:54.950Z"}

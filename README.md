@@ -1,5 +1,8 @@
 # ConsultaFácil
 
+PROJETO EM DESENVOLVIMENTO PARA PORTIFOLIO.
+CONTINUE ACOMPANHANDO AQUI. 
+
 A full-stack appointment scheduling system built with TypeScript, Node.js, React, and PostgreSQL.
 
 ## Features
