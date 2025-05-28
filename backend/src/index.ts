@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import helmet from 'helmet';
@@ -12,6 +14,7 @@ import appointmentRoutes from './routes/appointments';
 import userRoutes from './routes/users';
 import rulesRoutes from './routes/rules';
 import notificationRoutes from './routes/notifications';
+import availabilityRoutes from './routes/availability';
 import { basicLimiter, authLimiter, apiLimiter } from './middleware/rateLimit';
 import { errorHandler } from './middleware/errorHandler';
 import { DatabaseError } from './utils/errors';
@@ -20,8 +23,6 @@ import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { notFoundHandler } from './middleware/notFound';
 import { rateLimit } from 'express-rate-limit';
-
-dotenv.config();
 
 const app = express();
 const port = env.PORT || 3000;
@@ -48,6 +49,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/rules', rulesRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/availability', availabilityRoutes);
 
 // Swagger configuration
 const swaggerOptions = {
@@ -100,6 +102,19 @@ const swaggerOptions = {
             status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled'] },
             clientId: { type: 'integer' },
             professionalId: { type: 'integer' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        Availability: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            professionalId: { type: 'integer' },
+            dayOfWeek: { type: 'integer', minimum: 0, maximum: 6 },
+            startTime: { type: 'string', format: 'time' },
+            endTime: { type: 'string', format: 'time' },
+            isAvailable: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }

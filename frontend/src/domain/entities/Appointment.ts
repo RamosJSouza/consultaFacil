@@ -2,14 +2,24 @@ import type { User } from './User';
 
 export interface Appointment {
   id: number;
+  clientId: number;
+  professionalId: number;
   title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:MM:SS
+  endTime: string; // HH:MM:SS
   status: 'pending' | 'confirmed' | 'cancelled';
-  client: User;
-  professional: User;
   createdAt: string;
   updatedAt: string;
+  client?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  professional?: {
+    id: number;
+    name: string;
+    specialty?: string;
+  };
 } 

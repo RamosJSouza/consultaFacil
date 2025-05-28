@@ -28,7 +28,7 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
       return <Navigate to="/client/dashboard" replace />;
     } else if (user.role === UserRole.PROFESSIONAL) {
       return <Navigate to="/professional/dashboard" replace />;
-    } else if (user.role === UserRole.ADMIN) {
+    } else if (user.role === UserRole.SUPERADMIN) {
       return <Navigate to="/admin/dashboard" replace />;
     }
     

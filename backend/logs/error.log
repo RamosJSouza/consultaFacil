@@ -14,3 +14,12 @@
 {"level":"error","message":"POST /api/auth/login 500 Internal Server Error - 16ms","timestamp":"2025-05-28T18:44:51.753Z"}
 {"level":"error","message":"POST /api/auth/login 500 Internal Server Error - 6ms","timestamp":"2025-05-28T18:44:56.835Z"}
 {"level":"error","message":"POST /api/auth/register 500 Internal Server Error - 224ms","timestamp":"2025-05-28T18:45:59.678Z"}
+{"level":"error","message":"POST /api/auth/register 500 Internal Server Error - 331ms","timestamp":"2025-05-28T19:11:35.635Z"}
+{"level":"error","message":"POST /api/auth/login 500 Internal Server Error - 86ms","timestamp":"2025-05-28T19:14:14.230Z"}
+{"level":"error","message":"POST /api/auth/register 500 Internal Server Error - 256ms","timestamp":"2025-05-28T19:17:13.306Z"}
+{"level":"error","message":"GET /api/availability 500 Internal Server Error - 169ms","timestamp":"2025-05-28T20:19:58.276Z"}
+{"level":"error","message":"GET /api/availability 500 Internal Server Error - 15ms","timestamp":"2025-05-28T20:19:58.293Z"}
+{"level":"error","message":"POST /api/availability 500 Internal Server Error - 12ms","timestamp":"2025-05-28T20:20:03.786Z"}
+{"level":"error","message":"GET /api/availability 500 Internal Server Error - 13ms","timestamp":"2025-05-28T20:20:08.352Z"}
+{"level":"error","message":"GET /api/availability 500 Internal Server Error - 20ms","timestamp":"2025-05-28T20:20:08.380Z"}
+{"level":"error","message":"POST /api/availability 500 Internal Server Error - 11ms","timestamp":"2025-05-28T20:20:12.584Z"}

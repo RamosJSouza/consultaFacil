@@ -3,8 +3,12 @@ import { ValidationError, UnauthorizedError, NotFoundError } from '../utils/erro
 import { AuthenticatedRequest, UserRole } from '../types';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import crypto from 'crypto';
+import env from '../config/env'; // Import env configuration
+
+// Define StringValue type para corresponder à definição em jsonwebtoken
+type StringValue = string & { __brand: 'StringValue' };
 
 export class AuthController {
   private userRepository: SequelizeUserRepository;
@@ -21,10 +25,10 @@ export class AuthController {
     try {
       const { email, password, name, role: rawRole, specialty, licenseNumber } = req.body;
       
-      // Converter role para minúsculas para compatibilidade
+      // Convert role to lowercase for consistency
       const role = typeof rawRole === 'string' ? rawRole.toLowerCase() : rawRole;
 
-      console.log(`Register attempt with email: ${email}, role: ${rawRole} (normalized to: ${role})`);
+      console.log(`Register attempt with email: ${email}, role: ${role}, specialty: ${specialty}, licenseNumber: ${licenseNumber}`);
 
       // Validate required fields
       if (!email || !password || !name || !role) {
@@ -37,8 +41,13 @@ export class AuthController {
       }
 
       // Additional validation for professionals
-      if (role === UserRole.PROFESSIONAL && (!specialty || !licenseNumber)) {
-        throw new ValidationError('Professionals must provide specialty and license number');
+      if (role === UserRole.PROFESSIONAL) {
+        if (!specialty) {
+          throw new ValidationError('Professionals must provide specialty');
+        }
+        if (!licenseNumber) {
+          throw new ValidationError('Professionals must provide license number');
+        }
       }
 
       // Check if user already exists
@@ -47,16 +56,18 @@ export class AuthController {
         throw new ValidationError('Email already registered');
       }
 
-      // Create user
-      const user = await this.userRepository.create({
+      // Create user with appropriate fields
+      const userData = {
         email,
         password,
         name,
         role,
-        specialty,
-        licenseNumber,
         isActive: true,
-      });
+        ...(role === UserRole.PROFESSIONAL ? { specialty, licenseNumber } : {})
+      };
+
+      // Create user
+      const user = await this.userRepository.create(userData);
 
       // Generate tokens
       const accessToken = this.generateAccessToken(user);
@@ -75,6 +86,7 @@ export class AuthController {
         refreshToken,
       });
     } catch (error) {
+      console.error('Registration error:', error);
       next(error);
     }
   };
@@ -93,8 +105,8 @@ export class AuthController {
         throw new ValidationError('Email and password are required');
       }
 
-      // Verifica se JWT_SECRET está configurado
-      if (!process.env.JWT_SECRET) {
+      // Use env.JWT_SECRET instead of process.env.JWT_SECRET
+      if (!env.JWT_SECRET) {
         console.error('JWT_SECRET environment variable is not set');
         throw new Error('Authentication configuration error');
       }
@@ -173,11 +185,12 @@ export class AuthController {
         throw new UnauthorizedError('Refresh token is required');
       }
 
-      if (!process.env.JWT_REFRESH_SECRET) {
+      // Use env.JWT_REFRESH_SECRET instead of process.env.JWT_REFRESH_SECRET
+      if (!env.JWT_REFRESH_SECRET) {
         throw new Error('JWT refresh secret not configured');
       }
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET) as {
+      const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
         id: number;
         email: string;
         role: UserRole;
@@ -280,34 +293,34 @@ export class AuthController {
   };
 
   private generateAccessToken(user: { id: number; email: string; role: UserRole }): string {
-    if (!process.env.JWT_SECRET) {
+    if (!env.JWT_SECRET) {
       throw new Error('JWT secret not configured');
     }
-
+    
     return jwt.sign(
       {
         id: user.id,
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '15m' }
+      env.JWT_SECRET as Secret,
+      { expiresIn: '15m' } // Usar valor literal em vez da variável de ambiente
     );
   }
 
   private generateRefreshToken(user: { id: number; email: string; role: UserRole }): string {
-    if (!process.env.JWT_REFRESH_SECRET) {
+    if (!env.JWT_REFRESH_SECRET) {
       throw new Error('JWT refresh secret not configured');
     }
-
+    
     return jwt.sign(
       {
         id: user.id,
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      env.JWT_REFRESH_SECRET as Secret,
+      { expiresIn: '7d' } // Usar valor literal em vez da variável de ambiente
     );
   }
 } 

@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "root",
+    "database": "consultafacil",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  },
+  "test": {
+    "username": "postgres",
+    "password": "root",
+    "database": "consultafacil_test",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  },
+  "production": {
+    "username": "postgres",
+    "password": "root",
+    "database": "consultafacil_production",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  }
+} 

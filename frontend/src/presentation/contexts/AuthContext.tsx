@@ -5,6 +5,7 @@ import axios from 'axios';
 import { config } from '../../infrastructure/config';
 import type { User } from '../../domain/entities/User';
 import { UserRole } from '../../domain/entities/UserRole';
+import { toast } from 'react-toastify';
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +13,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +55,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      await fetchCurrentUser(token);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     try {
       const response = await axios.post(`${config.apiUrl}/auth/login`, {
@@ -65,25 +74,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('token', accessToken);
       setUser(user);
       
+      console.log('Login successful, user role:', user.role);
+      
       // Redirecionar com base no tipo de usuário
       switch (user.role) {
         case UserRole.CLIENT:
+          console.log('Redirecting to client dashboard');
           navigate('/client/dashboard');
           break;
         case UserRole.PROFESSIONAL:
+          console.log('Redirecting to professional dashboard');
           navigate('/professional/dashboard');
           break;
-        case UserRole.ADMIN:
-        case 'superadmin':
+        case UserRole.SUPERADMIN:
+          console.log('Redirecting to admin dashboard');
           navigate('/admin/dashboard');
           break;
         default:
+          console.log('Unknown role, redirecting to home');
           navigate('/');
       }
       
+      toast.success(`Bem-vindo(a), ${user.name}!`);
       return user;
     } catch (error: any) {
       console.error('Login failed:', error);
+      toast.error('Falha no login: ' + (error.response?.data?.message || error.message || 'Erro desconhecido'));
       throw error;
     }
   };
@@ -92,6 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('token');
     setUser(null);
     navigate('/login');
+    toast.info('Você saiu do sistema');
   };
 
   return (
@@ -101,7 +118,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isAuthenticated: !!user,
         isLoading,
         login,
-        logout
+        logout,
+        refreshUser
       }}
     >
       {children}

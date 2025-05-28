@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { config } from '../../../infrastructure/config';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { UserRole } from '../../../domain/entities/UserRole';
 
 export const Register = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,9 @@ export const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'CLIENT', // Default role
+    role: UserRole.CLIENT, // Default role
+    specialty: '',
+    licenseNumber: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,6 +59,17 @@ export const Register = () => {
       newErrors.confirmPassword = 'As senhas não coincidem';
     }
     
+    // Validate professional-specific fields
+    if (formData.role === UserRole.PROFESSIONAL) {
+      if (!formData.specialty.trim()) {
+        newErrors.specialty = 'Especialidade é obrigatória para profissionais';
+      }
+      
+      if (!formData.licenseNumber.trim()) {
+        newErrors.licenseNumber = 'Número de registro é obrigatório para profissionais';
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -70,7 +84,18 @@ export const Register = () => {
     try {
       setIsLoading(true);
       
-      const { confirmPassword, ...registrationData } = formData;
+      // Prepare the data to send
+      const { confirmPassword, ...dataToSend } = formData;
+      
+      // Only include specialty and licenseNumber for professionals
+      const registrationData = formData.role === UserRole.PROFESSIONAL
+        ? dataToSend
+        : {
+            name: dataToSend.name,
+            email: dataToSend.email,
+            password: dataToSend.password,
+            role: dataToSend.role,
+          };
       
       await axios.post(`${config.apiUrl}/auth/register`, registrationData);
       
@@ -82,6 +107,7 @@ export const Register = () => {
       
       navigate('/login');
     } catch (error: any) {
+      console.error('Registration error:', error.response?.data || error);
       const errorMessage = error.response?.data?.message || 'Erro ao criar conta';
       showToast('Erro', errorMessage, 'error');
       
@@ -97,6 +123,8 @@ export const Register = () => {
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
+
+  const isProfessional = formData.role === UserRole.PROFESSIONAL;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -228,14 +256,65 @@ export const Register = () => {
                   value={formData.role}
                   onChange={handleChange}
                 >
-                  <option value="CLIENT">Cliente</option>
-                  <option value="PROFESSIONAL">Profissional</option>
+                  <option value={UserRole.CLIENT}>Cliente</option>
+                  <option value={UserRole.PROFESSIONAL}>Profissional</option>
                 </select>
                 {errors.role && (
                   <p className="mt-1 text-sm text-red-600">{errors.role}</p>
                 )}
               </div>
             </div>
+            
+            {/* Professional-specific fields */}
+            {isProfessional && (
+              <>
+                <div>
+                  <label htmlFor="specialty" className="block text-sm font-medium text-gray-700">
+                    Especialidade
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="specialty"
+                      name="specialty"
+                      type="text"
+                      required={isProfessional}
+                      className={`block w-full appearance-none rounded-md border ${
+                        errors.specialty ? 'border-red-300' : 'border-gray-300'
+                      } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                      value={formData.specialty}
+                      onChange={handleChange}
+                      placeholder="Ex: Clínico Geral, Psicólogo, etc."
+                    />
+                    {errors.specialty && (
+                      <p className="mt-1 text-sm text-red-600">{errors.specialty}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700">
+                    Número de Registro Profissional
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="licenseNumber"
+                      name="licenseNumber"
+                      type="text"
+                      required={isProfessional}
+                      className={`block w-full appearance-none rounded-md border ${
+                        errors.licenseNumber ? 'border-red-300' : 'border-gray-300'
+                      } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                      value={formData.licenseNumber}
+                      onChange={handleChange}
+                      placeholder="Ex: CRM, CRP, etc."
+                    />
+                    {errors.licenseNumber && (
+                      <p className="mt-1 text-sm text-red-600">{errors.licenseNumber}</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div>
