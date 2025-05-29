@@ -174,7 +174,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0`}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-center h-16 px-4 border-b bg-gradient-to-r from-blue-600 to-indigo-700">
+          <div className="flex items-center justify-center h-16 px-4 border-b bg-gradient-to-r from-blue-800 to-indigo-900">
             <h1 className="text-xl font-bold text-white">ConsultaFácil</h1>
           </div>
           <div className="flex-1 overflow-y-auto">

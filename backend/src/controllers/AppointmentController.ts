@@ -36,13 +36,39 @@ export class AppointmentController {
         throw new ValidationError('User not authenticated');
       }
 
+      // Get status filter from query parameters
+      const { status } = req.query;
+      
       let appointments;
       if (req.user.role === UserRole.CLIENT) {
-        appointments = await this.appointmentRepository.findByClientId(req.user.id);
+        if (status && Object.values(AppointmentStatus).includes(status as AppointmentStatus)) {
+          // Filter by status for client
+          appointments = await this.appointmentRepository.findByClientIdAndStatus(
+            req.user.id, 
+            status as AppointmentStatus
+          );
+        } else {
+          // Get all client appointments
+          appointments = await this.appointmentRepository.findByClientId(req.user.id);
+        }
       } else if (req.user.role === UserRole.PROFESSIONAL) {
-        appointments = await this.appointmentRepository.findByProfessionalId(req.user.id);
+        if (status && Object.values(AppointmentStatus).includes(status as AppointmentStatus)) {
+          // Filter by status for professional
+          appointments = await this.appointmentRepository.findByProfessionalIdAndStatus(
+            req.user.id, 
+            status as AppointmentStatus
+          );
+        } else {
+          // Get all professional appointments
+          appointments = await this.appointmentRepository.findByProfessionalId(req.user.id);
+        }
       } else {
-        appointments = await this.appointmentRepository.findAll();
+        // Superadmin can see all appointments
+        if (status && Object.values(AppointmentStatus).includes(status as AppointmentStatus)) {
+          appointments = await this.appointmentRepository.findByStatus(status as AppointmentStatus);
+        } else {
+          appointments = await this.appointmentRepository.findAll();
+        }
       }
 
       res.json(appointments);
@@ -92,7 +118,7 @@ export class AppointmentController {
         throw new ValidationError('User not authenticated');
       }
 
-      const { professionalId, date, startTime, endTime, title, description } = req.body;
+      const { professionalId, clientId, date, startTime, endTime, title, description } = req.body;
 
       // Validate required fields
       if (!professionalId || !date || !startTime || !endTime || !title) {
@@ -103,6 +129,38 @@ export class AppointmentController {
       const professional = await this.userRepository.findById(professionalId);
       if (!professional || !professional.isActive || professional.role !== UserRole.PROFESSIONAL) {
         throw new ValidationError('Invalid professional');
+      }
+
+      // Determine the client ID based on the user role
+      let actualClientId: number;
+      
+      if (req.user.role === UserRole.PROFESSIONAL) {
+        // Professional is creating the appointment for a client
+        if (!clientId) {
+          throw new ValidationError('Client ID is required when a professional creates an appointment');
+        }
+        
+        // Check if client exists and is linked to this professional
+        const client = await this.userRepository.findById(clientId);
+        if (!client || !client.isActive || client.role !== UserRole.CLIENT) {
+          throw new ValidationError('Invalid client');
+        }
+        
+        // Check if professional is creating appointment for themselves
+        if (req.user.id !== professionalId) {
+          throw new ValidationError('Professional can only create appointments for themselves');
+        }
+        
+        // Verify if the client is linked to this professional
+        const isLinked = await this.userRepository.isClientLinkedToProfessional(clientId, professionalId);
+        if (!isLinked) {
+          throw new ValidationError('Client is not linked to this professional');
+        }
+        
+        actualClientId = clientId;
+      } else {
+        // Client is creating appointment for themselves
+        actualClientId = req.user.id;
       }
 
       // Check for overlapping appointments
@@ -118,7 +176,7 @@ export class AppointmentController {
       }
 
       const appointment = await this.appointmentRepository.create({
-        clientId: req.user.id,
+        clientId: actualClientId,
         professionalId,
         date: new Date(date),
         startTime,

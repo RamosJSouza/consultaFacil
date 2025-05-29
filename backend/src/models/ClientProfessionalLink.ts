@@ -7,6 +7,7 @@ class ClientProfessionalLink extends Model<IClientProfessionalLink> implements I
   public id!: number;
   public clientId!: number;
   public professionalId!: number;
+  public status!: 'pending' | 'approved' | 'rejected';
   public createdAt!: Date;
   public updatedAt!: Date;
 }
@@ -36,6 +37,11 @@ ClientProfessionalLink.init(
       },
       field: 'professional_id',
     },
+    status: {
+      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      allowNull: false,
+      defaultValue: 'pending',
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -61,5 +67,7 @@ ClientProfessionalLink.init(
     ],
   }
 );
+
+// Removendo as associações duplicadas, pois já estão definidas em models/index.ts
 
 export default ClientProfessionalLink;

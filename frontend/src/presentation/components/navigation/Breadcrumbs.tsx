@@ -34,7 +34,7 @@ export const Breadcrumbs = ({ items }: BreadcrumbsProps) => {
   };
   
   return (
-    <nav className="px-4 lg:px-6 py-3 bg-gray-50 border-t border-b border-gray-100">
+    <nav className="px-4 lg:px-6 py-3 bg-gray-100 border-t border-b border-gray-200">
       <ol className="flex items-center flex-wrap space-x-2 text-sm">
         <li className="flex items-center">
           <Link 

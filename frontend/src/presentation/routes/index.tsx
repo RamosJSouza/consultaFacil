@@ -10,9 +10,11 @@ import { Professionals } from '../pages/client/Professionals';
 import { ProfessionalDashboard } from '../pages/professional/Dashboard';
 import { ProfessionalSchedule } from '../pages/professional/Schedule';
 import { ProfessionalAvailability } from '../pages/professional/Availability';
+import { ProfessionalClients } from '../pages/professional/Clients';
+import { ProfessionalNewAppointment } from '../pages/professional/NewAppointment';
 import { AdminDashboard } from '../pages/admin/Dashboard';
 import { AdminUsers } from '../pages/admin/Users';
-import { Layout } from '../components/Layout';
+import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { UserRole } from '../../domain/entities/UserRole';
 import { UserProfile } from '../pages/profile/UserProfile';
@@ -33,7 +35,7 @@ export const AppRouter = () => {
         path="/client/*"
         element={
           <AuthGuard allowedRoles={[UserRole.CLIENT]}>
-            <Layout>
+            <DashboardLayout>
               <Routes>
                 <Route path="dashboard" element={<ClientDashboard />} />
                 <Route path="appointments" element={<ClientAppointments />} />
@@ -43,7 +45,7 @@ export const AppRouter = () => {
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
               </Routes>
-            </Layout>
+            </DashboardLayout>
           </AuthGuard>
         }
       />
@@ -53,15 +55,17 @@ export const AppRouter = () => {
         path="/professional/*"
         element={
           <AuthGuard allowedRoles={[UserRole.PROFESSIONAL]}>
-            <Layout>
+            <DashboardLayout>
               <Routes>
                 <Route path="dashboard" element={<ProfessionalDashboard />} />
+                <Route path="appointments/new" element={<ProfessionalNewAppointment />} />
                 <Route path="schedule" element={<ProfessionalSchedule />} />
                 <Route path="schedule/availability" element={<ProfessionalAvailability />} />
+                <Route path="clients" element={<ProfessionalClients />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="*" element={<Navigate to="/professional/dashboard" replace />} />
               </Routes>
-            </Layout>
+            </DashboardLayout>
           </AuthGuard>
         }
       />
@@ -71,14 +75,14 @@ export const AppRouter = () => {
         path="/admin/*"
         element={
           <AuthGuard allowedRoles={[UserRole.SUPERADMIN]}>
-            <Layout>
+            <DashboardLayout>
               <Routes>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
               </Routes>
-            </Layout>
+            </DashboardLayout>
           </AuthGuard>
         }
       />

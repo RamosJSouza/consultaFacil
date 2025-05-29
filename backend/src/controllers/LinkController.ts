@@ -76,6 +76,89 @@ export class LinkController {
     }
   };
 
+  // Get all pending client links for the authenticated professional
+  getPendingProfessionalLinks = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new ValidationError('User not authenticated');
+      }
+
+      // Ensure user is a professional
+      if (req.user.role !== UserRole.PROFESSIONAL && req.user.role !== UserRole.SUPERADMIN) {
+        throw new ForbiddenError('Only professionals can access their client links');
+      }
+
+      const professionalId = req.user.id;
+
+      const links = await ClientProfessionalLink.findAll({
+        where: { 
+          professionalId,
+          status: 'pending'
+        },
+        include: [
+          {
+            model: User,
+            as: 'client',
+            attributes: ['id', 'name', 'email'],
+          },
+        ],
+      });
+
+      res.json(links);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Approve a pending link request
+  approveLink = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new ValidationError('User not authenticated');
+      }
+
+      const { clientId, professionalId } = req.body;
+
+      // Validate required fields
+      if (!clientId || !professionalId) {
+        throw new ValidationError('Missing required fields');
+      }
+
+      // If user is a professional, they can only approve links to themselves
+      if (req.user.role === UserRole.PROFESSIONAL && req.user.id !== professionalId) {
+        throw new ForbiddenError('You can only approve links to yourself');
+      }
+
+      // Find the link
+      const link = await ClientProfessionalLink.findOne({
+        where: { 
+          clientId, 
+          professionalId,
+          status: 'pending'
+        },
+      });
+
+      if (!link) {
+        throw new NotFoundError('Link request');
+      }
+
+      // Update the link status to approved
+      await link.update({ status: 'approved' });
+
+      res.status(200).json({ message: 'Link approved successfully' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Create a new link between client and professional
   createLink = async (
     req: AuthenticatedRequest,
@@ -131,6 +214,7 @@ export class LinkController {
         const link = await ClientProfessionalLink.create({
           clientId,
           professionalId,
+          status: 'pending'
         });
 
         res.status(201).json(link);

@@ -13,6 +13,8 @@ export interface IUserRepository {
   updatePassword(id: number, password: string): Promise<User>;
   delete(id: number): Promise<void>;
   findActiveProfessionals(): Promise<User[]>;
+  searchProfessionalsByNameOrSpecialty(searchTerm: string): Promise<User[]>;
+  isClientLinkedToProfessional(clientId: number, professionalId: number): Promise<boolean>;
 }
 
 export interface IAppointmentRepository {

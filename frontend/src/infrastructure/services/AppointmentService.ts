@@ -46,7 +46,7 @@ export class AppointmentService implements IAppointmentService {
 
   async cancelAppointment(id: number): Promise<void> {
     try {
-      await axios.post(`${config.apiUrl}/appointments/${id}/cancel`, {}, {
+      await axios.patch(`${config.apiUrl}/appointments/${id}/cancel`, {}, {
         headers: this.headers
       });
     } catch (error) {
@@ -59,7 +59,7 @@ export class AppointmentService implements IAppointmentService {
 
   async confirmAppointment(id: number): Promise<Appointment> {
     try {
-      const response = await axios.post<Appointment>(`${config.apiUrl}/appointments/${id}/confirm`, {}, {
+      const response = await axios.patch<Appointment>(`${config.apiUrl}/appointments/${id}/confirm`, {}, {
         headers: this.headers
       });
       return response.data;

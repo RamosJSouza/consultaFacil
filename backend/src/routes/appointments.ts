@@ -27,6 +27,7 @@ const appointmentController = new AppointmentController();
  *               - startTime
  *               - endTime
  *               - professionalId
+ *               - clientId
  *             properties:
  *               title:
  *                 type: string
@@ -43,13 +44,16 @@ const appointmentController = new AppointmentController();
  *                 format: time
  *               professionalId:
  *                 type: integer
+ *               clientId:
+ *                 type: integer
+ *                 description: Required when a professional creates an appointment
  *     responses:
  *       201:
  *         description: Appointment created successfully
  *       400:
  *         description: Invalid input data
  */
-router.post('/', authenticate, authorize(UserRole.CLIENT), asyncHandler(appointmentController.createAppointment));
+router.post('/', authenticate, authorize([UserRole.CLIENT, UserRole.PROFESSIONAL]), asyncHandler(appointmentController.createAppointment));
 
 /**
  * @swagger

@@ -250,4 +250,34 @@ router.delete(
   asyncHandler(userController.deactivateUser)
 );
 
+/**
+ * @swagger
+ * /api/users/{id}/linked-clients:
+ *   get:
+ *     summary: Get all clients linked to a specific professional
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of linked clients
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: Professional not found
+ */
+router.get(
+  '/:id/linked-clients',
+  authenticate,
+  asyncHandler(userController.getLinkedClients)
+);
+
 export default router;

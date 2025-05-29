@@ -43,6 +43,58 @@ router.get(
 
 /**
  * @swagger
+ * /api/links/professional/pending:
+ *   get:
+ *     summary: Get all pending client link requests for the authenticated professional
+ *     tags: [Links]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending client link requests for the professional
+ */
+router.get(
+  '/professional/pending',
+  authenticate,
+  linkController.getPendingProfessionalLinks
+);
+
+/**
+ * @swagger
+ * /api/links/approve:
+ *   post:
+ *     summary: Approve a pending link between client and professional
+ *     tags: [Links]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - clientId
+ *               - professionalId
+ *             properties:
+ *               clientId:
+ *                 type: integer
+ *               professionalId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Link approved successfully
+ *       404:
+ *         description: Link not found
+ */
+router.post(
+  '/approve',
+  authenticate,
+  linkController.approveLink
+);
+
+/**
+ * @swagger
  * /api/links:
  *   post:
  *     summary: Create a new link between client and professional

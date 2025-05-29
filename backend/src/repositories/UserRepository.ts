@@ -3,6 +3,7 @@ import User from '../models/User';
 import { NotFoundError } from '../utils/errors';
 import { UserRole } from '../types';
 import { Op } from 'sequelize';
+import ClientProfessionalLink from '../models/ClientProfessionalLink';
 
 export class SequelizeUserRepository implements IUserRepository {
   async findById(id: number): Promise<User | null> {
@@ -96,5 +97,17 @@ export class SequelizeUserRepository implements IUserRepository {
       },
       attributes: ['id', 'name', 'email', 'specialty', 'licenseNumber']
     });
+  }
+
+  async isClientLinkedToProfessional(clientId: number, professionalId: number): Promise<boolean> {
+    const link = await ClientProfessionalLink.findOne({
+      where: {
+        clientId,
+        professionalId,
+        status: 'approved'
+      }
+    });
+    
+    return !!link;
   }
 }

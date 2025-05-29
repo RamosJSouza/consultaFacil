@@ -46,13 +46,15 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
   }
 };
 
-export const authorize = (...roles: UserRole[]) => {
+export const authorize = (roles: UserRole | UserRole[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       throw new UnauthorizedError('User not authenticated');
     }
 
-    if (!roles.includes(req.user.role)) {
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+    
+    if (!allowedRoles.includes(req.user.role)) {
       throw new ForbiddenError('User not authorized');
     }
 

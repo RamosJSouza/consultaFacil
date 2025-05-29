@@ -60,7 +60,7 @@ export const createAppointment = async (req: AuthRequest, res: Response): Promis
       date,
       startTime,
       endTime,
-      status: 'pending',
+      status: req.user.role === UserRole.PROFESSIONAL ? 'approved' : 'pending',
     });
 
     res.status(201).json(appointment);

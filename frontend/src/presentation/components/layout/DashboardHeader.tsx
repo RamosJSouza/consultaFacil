@@ -92,6 +92,11 @@ export const DashboardHeader = ({ breadcrumbs, toggleSidebar }: DashboardHeaderP
               </button>
               <h1 className="ml-4 text-lg font-semibold lg:hidden">ConsultaFácil</h1>
             </div>
+            
+            {/* Center - Title (visible on desktop) */}
+            <div className="hidden lg:flex lg:items-center">
+              <h1 className="text-lg font-semibold text-blue-800">Dashboard ConsultaFácil</h1>
+            </div>
 
             {/* Right side - Notification and profile */}
             <div className="flex items-center gap-3 md:gap-6 ml-auto">

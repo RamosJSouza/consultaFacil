@@ -55,6 +55,7 @@ export interface IClientProfessionalLink {
   id?: number;
   clientId: number;
   professionalId: number;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt?: Date;
   updatedAt?: Date;
 }

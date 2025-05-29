@@ -3,6 +3,8 @@ import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors'
 import { AuthenticatedRequest, UserRole } from '../types';
 import { SequelizeUserRepository } from '../repositories/UserRepository';
 import logger from '../utils/logger';
+import ClientProfessionalLink from '../models/ClientProfessionalLink';
+import User from '../models/User';
 
 export class UserController {
   private userRepository: SequelizeUserRepository;
@@ -182,6 +184,58 @@ export class UserController {
 
       await this.userRepository.delete(userId);
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getLinkedClients = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const professionalId = parseInt(req.params.id);
+      if (isNaN(professionalId)) {
+        throw new ValidationError('Invalid professional ID');
+      }
+
+      // Check if the professional exists
+      const professional = await this.userRepository.findById(professionalId);
+      if (!professional || professional.role !== UserRole.PROFESSIONAL) {
+        throw new NotFoundError('Professional');
+      }
+
+      // Check if user has permission to view this data
+      if (
+        req.user?.role !== UserRole.SUPERADMIN &&
+        req.user?.id !== professionalId
+      ) {
+        throw new ForbiddenError('Access denied');
+      }
+
+      // Find all approved links for this professional
+      const links = await ClientProfessionalLink.findAll({
+        where: { 
+          professionalId,
+          status: 'approved'
+        },
+        include: [
+          {
+            model: User,
+            as: 'client',
+            attributes: ['id', 'name', 'email']
+          }
+        ]
+      });
+
+      // Extract client data from links
+      const clients = links.map(link => {
+        // @ts-ignore - The 'client' property exists due to the include but TypeScript doesn't recognize it
+        return link.get('client');
+      });
+      
+      res.json(clients);
     } catch (error) {
       next(error);
     }
