@@ -76,6 +76,42 @@ router.get(
 
 /**
  * @swagger
+ * /api/users/professionals/search:
+ *   get:
+ *     summary: Search professionals by name or specialty
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: term
+ *         schema:
+ *           type: string
+ *         description: Search term for name or specialty
+ *     responses:
+ *       200:
+ *         description: List of professionals matching the search term
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/professionals/search',
+  authenticate,
+  asyncHandler(userController.searchProfessionals)
+);
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     summary: Get user by ID

@@ -40,6 +40,29 @@ export class UserController {
     }
   };
 
+  searchProfessionals = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const searchTerm = req.query.term as string || '';
+      logger.info(`Buscando profissionais com termo: ${searchTerm}`);
+      
+      if (!searchTerm || searchTerm.trim() === '') {
+        const professionals = await this.userRepository.findActiveProfessionals();
+        res.json(professionals);
+      } else {
+        const professionals = await this.userRepository.searchProfessionalsByNameOrSpecialty(searchTerm);
+        logger.info(`Encontrados ${professionals.length} profissionais para o termo: ${searchTerm}`);
+        res.json(professionals);
+      }
+    } catch (error) {
+      logger.error('Erro ao buscar profissionais por nome ou especialidade:', error);
+      next(error);
+    }
+  };
+
   getUserById = async (
     req: AuthenticatedRequest,
     res: Response,

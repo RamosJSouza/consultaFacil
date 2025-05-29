@@ -2,6 +2,7 @@ import { IUserRepository } from './interfaces';
 import User from '../models/User';
 import { NotFoundError } from '../utils/errors';
 import { UserRole } from '../types';
+import { Op } from 'sequelize';
 
 export class SequelizeUserRepository implements IUserRepository {
   async findById(id: number): Promise<User | null> {
@@ -70,6 +71,28 @@ export class SequelizeUserRepository implements IUserRepository {
       where: {
         role: UserRole.PROFESSIONAL,
         isActive: true
+      },
+      attributes: ['id', 'name', 'email', 'specialty', 'licenseNumber']
+    });
+  }
+
+  async searchProfessionalsByNameOrSpecialty(searchTerm: string): Promise<User[]> {
+    return User.findAll({
+      where: {
+        role: UserRole.PROFESSIONAL,
+        isActive: true,
+        [Op.or]: [
+          {
+            name: {
+              [Op.like]: `%${searchTerm}%`
+            }
+          },
+          {
+            specialty: {
+              [Op.like]: `%${searchTerm}%`
+            }
+          }
+        ]
       },
       attributes: ['id', 'name', 'email', 'specialty', 'licenseNumber']
     });

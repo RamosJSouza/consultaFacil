@@ -135,7 +135,7 @@ describe('NotificationContext', () => {
   });
 
   it('handles errors gracefully', async () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => { });
     (NotificationService as jest.Mock).mockImplementation(() => ({
       getNotifications: jest.fn().mockRejectedValue(new Error('Failed to fetch')),
       markAsRead: jest.fn().mockRejectedValue(new Error('Failed to mark as read')),

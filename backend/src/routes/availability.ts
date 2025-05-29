@@ -107,6 +107,27 @@ router.get(
 
 /**
  * @swagger
+ * /api/availability/professional/{professionalId}/days:
+ *   get:
+ *     summary: Get available days of the week for a specific professional
+ *     tags: [Availability]
+ *     parameters:
+ *       - in: path
+ *         name: professionalId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of available days (0-6, Sunday to Saturday)
+ */
+router.get(
+  '/professional/:professionalId/days',
+  availabilityController.getAvailableDaysForProfessional
+);
+
+/**
+ * @swagger
  * /api/availability:
  *   post:
  *     summary: Create a new availability

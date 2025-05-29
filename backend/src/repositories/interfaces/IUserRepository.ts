@@ -11,4 +11,5 @@ export interface IUserRepository {
   updatePassword(id: number, password: string): Promise<User>;
   delete(id: number): Promise<void>;
   findActiveProfessionals(): Promise<User[]>;
+  searchProfessionalsByNameOrSpecialty(searchTerm: string): Promise<User[]>;
 } 

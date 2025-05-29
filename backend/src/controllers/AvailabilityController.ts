@@ -203,6 +203,42 @@ export class AvailabilityController {
     }
   };
 
+  // Get available days of the week for a specific professional
+  getAvailableDaysForProfessional = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const professionalId = parseInt(req.params.professionalId);
+
+      if (isNaN(professionalId)) {
+        throw new ValidationError('Invalid professional ID');
+      }
+
+      // Verify the professional exists
+      const professional = await this.userRepository.findById(professionalId);
+      if (!professional || !professional.isActive || professional.role !== UserRole.PROFESSIONAL) {
+        throw new NotFoundError('Professional');
+      }
+
+      // Get all availabilities for this professional
+      const availabilities = await this.availabilityRepository.findByProfessionalId(professionalId);
+      
+      // Extract days of week where the professional has availability
+      const availableDays = availabilities
+        .filter(a => a.isAvailable)
+        .map(a => a.dayOfWeek);
+      
+      // Remove duplicates
+      const uniqueAvailableDays = [...new Set(availableDays)];
+      
+      res.json(uniqueAvailableDays);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Create new availability
   createAvailability = async (
     req: AuthenticatedRequest,
